@@ -1,26 +1,26 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-
+import { ThemeProvider, createTheme } from '@mui/material';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import Layout from './components/Layout';
-import Home from './pages/Home';
+import ProtectedRoute from './components/ProtectedRoute';
+
+// Pages
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ClientDashboard from './pages/dashboard/ClientDashboard';
+import ProviderDashboard from './pages/dashboard/ProviderDashboard';
+import CreateListing from './pages/CreateListing';
+import Listings from './pages/Listings';
+import Home from './pages/Home';
+import Layout from './components/Layout';
 
-// Create a theme instance
 const theme = createTheme({
   palette: {
     primary: {
       main: '#1976d2',
-      light: '#42a5f5',
-      dark: '#1565c0',
     },
     secondary: {
       main: '#dc004e',
-      light: '#ff4081',
-      dark: '#9a0036',
     },
   },
   typography: {
@@ -36,44 +36,68 @@ const theme = createTheme({
   },
 });
 
-// Protected Route component
-const ProtectedRoute = ({ children }) => {
-  const { user, loading } = useAuth();
-  
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-  
+const DashboardRouter = () => {
+  const { user } = useAuth();
+
   if (!user) {
     return <Navigate to="/login" />;
   }
 
-  return children;
+  if (user.role === 'client') {
+    return <ClientDashboard />;
+  } else if (user.role === 'provider') {
+    return <ProviderDashboard />;
+  }
+
+  return <Navigate to="/" />;
 };
 
 function App() {
   return (
     <ThemeProvider theme={theme}>
-      <CssBaseline />
       <AuthProvider>
         <Router>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <Layout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Home />} />
-              <Route path="services" element={<div>Services Page (Coming Soon)</div>} />
-              <Route path="profile" element={<div>Profile Page (Coming Soon)</div>} />
-              <Route path="messages" element={<div>Messages Page (Coming Soon)</div>} />
-            </Route>
-          </Routes>
+          <Layout>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              
+              {/* Protected Routes */}
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <DashboardRouter />
+                  </ProtectedRoute>
+                }
+              />
+              
+              {/* Client Routes */}
+              <Route
+                path="/create-request"
+                element={
+                  <ProtectedRoute allowedRoles={['client']}>
+                    <CreateListing />
+                  </ProtectedRoute>
+                }
+              />
+              
+              {/* Provider Routes */}
+              <Route
+                path="/available-requests"
+                element={
+                  <ProtectedRoute allowedRoles={['provider']}>
+                    <Listings />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Catch all route */}
+              <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+          </Layout>
         </Router>
       </AuthProvider>
     </ThemeProvider>

@@ -1,137 +1,304 @@
 import React, { useState } from 'react';
-import { 
-  AppBar, 
-  Box, 
-  CssBaseline, 
-  Drawer, 
-  IconButton, 
-  List, 
-  ListItem, 
-  ListItemIcon, 
-  ListItemText, 
-  Toolbar, 
+import {
+  AppBar,
+  Box,
+  Toolbar,
+  IconButton,
   Typography,
+  Menu,
+  Container,
+  Avatar,
   Button,
+  Tooltip,
+  MenuItem,
   useTheme,
   useMediaQuery
 } from '@mui/material';
-import {
-  Menu as MenuIcon,
-  Home as HomeIcon,
-  Build as BuildIcon,
-  Person as PersonIcon,
-  Message as MessageIcon,
-} from '@mui/icons-material';
-import { useNavigate, Outlet } from 'react-router-dom';
+import MenuIcon from '@mui/icons-material/Menu';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
-const drawerWidth = 240;
-
-function Layout() {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+const Layout = ({ children }) => {
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const location = useLocation();
 
-  const menuItems = [
-    { text: 'Home', icon: <HomeIcon />, path: '/' },
-    { text: 'Services', icon: <BuildIcon />, path: '/services' },
-    { text: 'Profile', icon: <PersonIcon />, path: '/profile' },
-    { text: 'Messages', icon: <MessageIcon />, path: '/messages' },
-  ];
+  const [anchorElNav, setAnchorElNav] = useState(null);
+  const [anchorElUser, setAnchorElUser] = useState(null);
 
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
+  const handleOpenNavMenu = (event) => {
+    setAnchorElNav(event.currentTarget);
+  };
+  const handleOpenUserMenu = (event) => {
+    setAnchorElUser(event.currentTarget);
   };
 
-  const drawer = (
-    <div>
-      <Toolbar />
-      <List>
-        {menuItems.map((item) => (
-          <ListItem 
-            button 
-            key={item.text} 
-            onClick={() => {
-              navigate(item.path);
-              if (isMobile) handleDrawerToggle();
-            }}
-          >
-            <ListItemIcon>{item.icon}</ListItemIcon>
-            <ListItemText primary={item.text} />
-          </ListItem>
-        ))}
-      </List>
-    </div>
-  );
+  const handleCloseNavMenu = () => {
+    setAnchorElNav(null);
+  };
+
+  const handleCloseUserMenu = () => {
+    setAnchorElUser(null);
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+    handleCloseUserMenu();
+  };
+
+  const getNavItems = () => {
+    if (!user) return [];
+
+    if (user.role === 'client') {
+      return [
+        { label: 'Dashboard', path: '/dashboard' },
+        { label: 'My Requests', path: '/my-requests' },
+        { label: 'New Request', path: '/create-request' },
+      ];
+    }
+
+    if (user.role === 'provider') {
+      return [
+        { label: 'Dashboard', path: '/dashboard' },
+        { label: 'Available Jobs', path: '/available-requests' },
+        { label: 'My Jobs', path: '/my-jobs' },
+      ];
+    }
+
+    return [];
+  };
+
+  // Check if current route is allowed for user's role
+  const isRouteAllowed = (path) => {
+    if (!user) return true; // Allow public routes
+    
+    const clientRoutes = ['/dashboard', '/my-requests', '/create-request'];
+    const providerRoutes = ['/dashboard', '/available-requests', '/my-jobs'];
+    
+    if (user.role === 'client' && providerRoutes.includes(path)) {
+      return false;
+    }
+    
+    if (user.role === 'provider' && clientRoutes.includes(path)) {
+      return false;
+    }
+    
+    return true;
+  };
+
+  // Redirect if current route is not allowed
+  React.useEffect(() => {
+    if (!isRouteAllowed(location.pathname)) {
+      navigate('/dashboard');
+    }
+  }, [location.pathname, user]);
+
+  const navItems = getNavItems();
 
   return (
-    <Box sx={{ display: 'flex' }}>
-      <CssBaseline />
-      <AppBar
-        position="fixed"
-        sx={{
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          ml: { sm: `${drawerWidth}px` },
-        }}
-      >
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: 'none' } }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            Fixit - Repair Service
-          </Typography>
-          <Button color="inherit">Login</Button>
-        </Toolbar>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <AppBar position="static">
+        <Container maxWidth="xl">
+          <Toolbar disableGutters>
+            {/* Logo/Brand - Desktop */}
+            <Typography
+              variant="h6"
+              noWrap
+              component={Link}
+              to="/"
+              sx={{
+                mr: 2,
+                display: { xs: 'none', md: 'flex' },
+                fontWeight: 700,
+                color: 'inherit',
+                textDecoration: 'none',
+              }}
+            >
+              FixIt
+            </Typography>
+
+            {/* Mobile menu */}
+            {isMobile && user && (
+              <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
+                <IconButton
+                  size="large"
+                  aria-controls="menu-appbar"
+                  aria-haspopup="true"
+                  onClick={handleOpenNavMenu}
+                  color="inherit"
+                >
+                  <MenuIcon />
+                </IconButton>
+                <Menu
+                  id="menu-appbar"
+                  anchorEl={anchorElNav}
+                  anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'left',
+                  }}
+                  keepMounted
+                  transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'left',
+                  }}
+                  open={Boolean(anchorElNav)}
+                  onClose={handleCloseNavMenu}
+                  sx={{
+                    display: { xs: 'block', md: 'none' },
+                  }}
+                >
+                  {navItems.map((item) => (
+                    <MenuItem
+                      key={item.path}
+                      onClick={() => {
+                        navigate(item.path);
+                        handleCloseNavMenu();
+                      }}
+                    >
+                      <Typography textAlign="center">{item.label}</Typography>
+                    </MenuItem>
+                  ))}
+                </Menu>
+              </Box>
+            )}
+
+            {/* Logo/Brand - Mobile */}
+            <Typography
+              variant="h6"
+              noWrap
+              component={Link}
+              to="/"
+              sx={{
+                mr: 2,
+                display: { xs: 'flex', md: 'none' },
+                flexGrow: 1,
+                fontWeight: 700,
+                color: 'inherit',
+                textDecoration: 'none',
+              }}
+            >
+              FixIt
+            </Typography>
+
+            {/* Desktop menu */}
+            <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
+              {navItems.map((item) => (
+                <Button
+                  key={item.path}
+                  onClick={() => {
+                    navigate(item.path);
+                    handleCloseNavMenu();
+                  }}
+                  sx={{ 
+                    my: 2, 
+                    color: 'white', 
+                    display: 'block',
+                    ...(location.pathname === item.path && {
+                      bgcolor: 'rgba(255, 255, 255, 0.1)',
+                    })
+                  }}
+                >
+                  {item.label}
+                </Button>
+              ))}
+            </Box>
+
+            {/* User menu */}
+            <Box sx={{ flexGrow: 0 }}>
+              {user ? (
+                <>
+                  <Tooltip title="Open settings">
+                    <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
+                      <Avatar alt={user.name} src="/static/images/avatar/2.jpg" />
+                    </IconButton>
+                  </Tooltip>
+                  <Menu
+                    sx={{ mt: '45px' }}
+                    id="menu-appbar"
+                    anchorEl={anchorElUser}
+                    anchorOrigin={{
+                      vertical: 'top',
+                      horizontal: 'right',
+                    }}
+                    keepMounted
+                    transformOrigin={{
+                      vertical: 'top',
+                      horizontal: 'right',
+                    }}
+                    open={Boolean(anchorElUser)}
+                    onClose={handleCloseUserMenu}
+                  >
+                    <MenuItem onClick={() => {
+                      navigate('/profile');
+                      handleCloseUserMenu();
+                    }}>
+                      <Typography textAlign="center">
+                        {user.role === 'client' ? 'My Profile' : 'Provider Profile'}
+                      </Typography>
+                    </MenuItem>
+                    <MenuItem onClick={handleLogout}>
+                      <Typography textAlign="center">Logout</Typography>
+                    </MenuItem>
+                  </Menu>
+                </>
+              ) : (
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button
+                    color="inherit"
+                    onClick={() => navigate('/login')}
+                  >
+                    Login
+                  </Button>
+                  <Button
+                    color="inherit"
+                    variant="outlined"
+                    onClick={() => navigate('/register')}
+                    sx={{
+                      borderColor: 'white',
+                      '&:hover': {
+                        borderColor: 'white',
+                        bgcolor: 'rgba(255, 255, 255, 0.1)',
+                      },
+                    }}
+                  >
+                    Sign Up
+                  </Button>
+                </Box>
+              )}
+            </Box>
+          </Toolbar>
+        </Container>
       </AppBar>
-      <Box
-        component="nav"
-        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-      >
-        <Drawer
-          variant="temporary"
-          open={mobileOpen}
-          onClose={handleDrawerToggle}
-          ModalProps={{
-            keepMounted: true, // Better open performance on mobile.
-          }}
-          sx={{
-            display: { xs: 'block', sm: 'none' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-          }}
-        >
-          {drawer}
-        </Drawer>
-        <Drawer
-          variant="permanent"
-          sx={{
-            display: { xs: 'none', sm: 'block' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-          }}
-          open
-        >
-          {drawer}
-        </Drawer>
+
+      {/* Main content */}
+      <Box component="main" sx={{ flexGrow: 1 }}>
+        {children}
       </Box>
+
+      {/* Footer */}
       <Box
-        component="main"
+        component="footer"
         sx={{
-          flexGrow: 1,
-          p: 3,
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          mt: '64px'
+          py: 3,
+          px: 2,
+          mt: 'auto',
+          backgroundColor: (theme) =>
+            theme.palette.mode === 'light'
+              ? theme.palette.grey[200]
+              : theme.palette.grey[800],
         }}
       >
-        <Outlet />
+        <Container maxWidth="lg">
+          <Typography variant="body2" color="text.secondary" align="center">
+            © {new Date().getFullYear()} FixIt. All rights reserved.
+          </Typography>
+        </Container>
       </Box>
     </Box>
   );
-}
+};
 
 export default Layout; 
