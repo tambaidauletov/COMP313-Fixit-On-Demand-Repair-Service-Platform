@@ -14,12 +14,20 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   }
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-    if (user.role === 'client') {
-      return <Navigate to="/dashboard" />;
-    } else if (user.role === 'provider') {
-      return <Navigate to="/provider/dashboard" />;
+    switch (user.role) {
+      case 'client':
+        return <Navigate to="/client/dashboard" />;
+      case 'provider':
+        return <Navigate to="/provider/dashboard" />;
+      case 'manager':
+        return <Navigate to="/manager/dashboard" />;
+      case 'moderator':
+        return <Navigate to="/moderator/dashboard" />;
+      case 'admin':
+        return <Navigate to="/admin/dashboard" />;
+      default:
+        return <Navigate to="/" />;
     }
-    return <Navigate to="/" />;
   }
 
   return children;

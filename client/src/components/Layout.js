@@ -52,41 +52,100 @@ const Layout = ({ children }) => {
   const getNavItems = () => {
     if (!user) return [];
 
-    if (user.role === 'client') {
-      return [
-        { label: 'Dashboard', path: '/dashboard' },
-        { label: 'My Requests', path: '/my-requests' },
-        { label: 'New Request', path: '/create-request' },
-      ];
-    }
+    switch (user.role) {
+      case 'client':
+        return [
+          { label: 'Dashboard', path: '/client/dashboard' },
+          { label: 'My Requests', path: '/client/requests' },
+          { label: 'New Request', path: '/client/create-request' },
+          { label: 'Messages', path: '/client/messages' },
+          { label: 'Find Providers', path: '/client/providers' },
+          { label: 'My Reports', path: '/client/reports' },
+          { label: 'Settings', path: '/client/settings' }
+        ];
 
-    if (user.role === 'provider') {
-      return [
-        { label: 'Dashboard', path: '/dashboard' },
-        { label: 'Available Jobs', path: '/available-requests' },
-        { label: 'My Jobs', path: '/my-jobs' },
-      ];
-    }
+      case 'provider':
+        return [
+          { label: 'Dashboard', path: '/provider/dashboard' },
+          { label: 'Available Jobs', path: '/provider/available-jobs' },
+          { label: 'My Jobs', path: '/provider/my-jobs' },
+          { label: 'Messages', path: '/provider/messages' },
+          { label: 'Qualifications', path: '/provider/qualifications' },
+          { label: 'Saved Searches', path: '/provider/saved-searches' },
+          { label: 'Settings', path: '/provider/settings' }
+        ];
 
-    return [];
+      case 'manager':
+        return [
+          { label: 'Dashboard', path: '/manager/dashboard' },
+          { label: 'Reports', path: '/manager/reports' },
+          { label: 'User Management', path: '/manager/users' },
+          { label: 'Moderators', path: '/manager/moderators' },
+          { label: 'Qualifications', path: '/manager/qualifications' },
+          { label: 'Export Data', path: '/manager/export' },
+          { label: 'Settings', path: '/manager/settings' }
+        ];
+
+      case 'moderator':
+        return [
+          { label: 'Dashboard', path: '/moderator/dashboard' },
+          { label: 'Reports', path: '/moderator/reports' },
+          { label: 'Content Review', path: '/moderator/content' },
+          { label: 'Qualifications', path: '/moderator/qualifications' },
+          { label: 'Settings', path: '/moderator/settings' }
+        ];
+
+      case 'admin':
+        return [
+          { label: 'Dashboard', path: '/admin/dashboard' },
+          { label: 'System Settings', path: '/admin/settings' },
+          { label: 'User Management', path: '/admin/users' },
+          { label: 'Access Control', path: '/admin/access' },
+          { label: 'System Logs', path: '/admin/logs' }
+        ];
+
+      default:
+        return [];
+    }
   };
 
   // Check if current route is allowed for user's role
   const isRouteAllowed = (path) => {
     if (!user) return true; // Allow public routes
     
-    const clientRoutes = ['/dashboard', '/my-requests', '/create-request'];
-    const providerRoutes = ['/dashboard', '/available-requests', '/my-jobs'];
+    const clientRoutes = [
+      '/client/dashboard', '/client/requests', '/client/create-request', 
+      '/client/messages', '/client/providers', '/client/reports', '/client/settings'
+    ];
+    const providerRoutes = [
+      '/provider/dashboard', '/provider/available-jobs', '/provider/my-jobs', 
+      '/provider/messages', '/provider/qualifications', '/provider/saved-searches', 
+      '/provider/settings'
+    ];
+    const managerRoutes = [
+      '/manager/dashboard', '/manager/reports', '/manager/users', 
+      '/manager/moderators', '/manager/qualifications', '/manager/export', 
+      '/manager/settings'
+    ];
+    const moderatorRoutes = [
+      '/moderator/dashboard', '/moderator/reports', '/moderator/content', 
+      '/moderator/qualifications', '/moderator/settings'
+    ];
+    const adminRoutes = [
+      '/admin/dashboard', '/admin/settings', '/admin/users', 
+      '/admin/access', '/admin/logs'
+    ];
     
-    if (user.role === 'client' && providerRoutes.includes(path)) {
-      return false;
-    }
+    const roleRoutes = {
+      client: clientRoutes,
+      provider: providerRoutes,
+      manager: managerRoutes,
+      moderator: moderatorRoutes,
+      admin: adminRoutes
+    };
     
-    if (user.role === 'provider' && clientRoutes.includes(path)) {
-      return false;
-    }
-    
-    return true;
+    // Check if the current path starts with any of the allowed routes for the user's role
+    return roleRoutes[user.role]?.some(route => path.startsWith(route)) || false;
   };
 
   // Redirect if current route is not allowed
@@ -236,7 +295,7 @@ const Layout = ({ children }) => {
                       handleCloseUserMenu();
                     }}>
                       <Typography textAlign="center">
-                        {user.role === 'client' ? 'My Profile' : 'Provider Profile'}
+                        {user.role === 'client' ? 'My Profile' : user.role === 'provider' ? 'Provider Profile' : user.role === 'manager' ? 'Manager Profile' : user.role === 'moderator' ? 'Moderator Profile' : 'Admin Profile'}
                       </Typography>
                     </MenuItem>
                     <MenuItem onClick={handleLogout}>

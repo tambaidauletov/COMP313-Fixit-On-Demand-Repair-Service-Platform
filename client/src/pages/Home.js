@@ -51,10 +51,26 @@ const Home = () => {
   const handleAction = () => {
     if (!user) {
       navigate('/register');
-    } else if (user.role === 'client') {
-      navigate('/dashboard');
     } else {
-      navigate('/provider/dashboard');
+      switch (user.role) {
+        case 'client':
+          navigate('/client/dashboard');
+          break;
+        case 'provider':
+          navigate('/provider/dashboard');
+          break;
+        case 'manager':
+          navigate('/manager/dashboard');
+          break;
+        case 'moderator':
+          navigate('/moderator/dashboard');
+          break;
+        case 'admin':
+          navigate('/admin/dashboard');
+          break;
+        default:
+          navigate('/');
+      }
     }
   };
 
