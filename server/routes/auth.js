@@ -8,7 +8,7 @@ const jwtSecret = process.env.JWT_SECRET || 'secret';
 // Register new user
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, name } = req.body;
+    const { email, password, name, role, phone, address, services } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -16,11 +16,25 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
+    // Validate required fields
+    if (!email || !password || !name || !role || !phone || !address) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    // Validate role
+    if (!['client', 'provider'].includes(role)) {
+      return res.status(400).json({ message: 'Invalid role' });
+    }
+
     // Create new user
     const user = new User({
       email,
       password,
-      name
+      name,
+      role,
+      phone,
+      address,
+      services: role === 'provider' ? services : []
     });
 
     await user.save();
@@ -38,10 +52,14 @@ router.post('/register', async (req, res) => {
         id: user._id,
         email: user.email,
         name: user.name,
-        role: user.role
+        role: user.role,
+        phone: user.phone,
+        address: user.address,
+        services: user.services
       }
     });
   } catch (error) {
+    console.error('Registration error:', error);
     res.status(500).json({ message: 'Error creating user', error: error.message });
   }
 });
@@ -76,7 +94,10 @@ router.post('/login', async (req, res) => {
         id: user._id,
         email: user.email,
         name: user.name,
-        role: user.role
+        role: user.role,
+        phone: user.phone,
+        address: user.address,
+        services: user.services
       }
     });
   } catch (error) {
