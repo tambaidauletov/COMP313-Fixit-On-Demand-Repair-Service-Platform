@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth');
+const { protect } = require('../middleware/auth');
 const Request = require('../models/Request');
 const User = require('../models/User');
 
 // Create a new service request
-router.post('/', auth, async (req, res) => {
+router.post('/', protect, async (req, res) => {
   try {
     const { service, description, location, budget } = req.body;
     
@@ -27,7 +27,7 @@ router.post('/', auth, async (req, res) => {
 });
 
 // Get client's requests
-router.get('/my-requests', auth, async (req, res) => {
+router.get('/my-requests', protect, async (req, res) => {
   try {
     const requests = await Request.find({ client: req.user.id })
       .sort({ createdAt: -1 });
@@ -39,7 +39,7 @@ router.get('/my-requests', auth, async (req, res) => {
 });
 
 // Get provider's jobs
-router.get('/provider-jobs', auth, async (req, res) => {
+router.get('/provider-jobs', protect, async (req, res) => {
   try {
     const jobs = await Request.find({ 
       provider: req.user.id,
@@ -61,7 +61,7 @@ router.get('/provider-jobs', auth, async (req, res) => {
 });
 
 // Get available requests for providers
-router.get('/available', auth, async (req, res) => {
+router.get('/available', protect, async (req, res) => {
   try {
     const requests = await Request.find({ 
       status: 'pending',
@@ -77,7 +77,7 @@ router.get('/available', auth, async (req, res) => {
 });
 
 // Accept a request (for providers)
-router.post('/:requestId/accept', auth, async (req, res) => {
+router.post('/:requestId/accept', protect, async (req, res) => {
   try {
     const request = await Request.findById(req.params.requestId);
     
@@ -101,7 +101,7 @@ router.post('/:requestId/accept', auth, async (req, res) => {
 });
 
 // Update request status
-router.patch('/:requestId/status', auth, async (req, res) => {
+router.patch('/:requestId/status', protect, async (req, res) => {
   try {
     const { status } = req.body;
     const request = await Request.findById(req.params.requestId);

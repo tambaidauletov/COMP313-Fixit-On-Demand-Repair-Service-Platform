@@ -1,39 +1,30 @@
 const express = require('express');
-const Listing = require('../models/Listing');
 const router = express.Router();
-const jwt = require('jsonwebtoken');
-const jwtSecret = process.env.JWT_SECRET || 'secret';
+const { 
+  createListing,
+  getListings,
+  getMyListings,
+  getListingById,
+  updateListing,
+  deleteListing,
+  markListingAsSolved
+} = require('../controllers/listingController');
+const { protect, authorize } = require('../middleware/auth');
+const { upload } = require('../utils/fileUpload');
 
-// Middleware to verify JWT token
-function authMiddleware(req, res, next) {
-  const token = req.headers.authorization;
-  if (!token) return res.status(401).json({ error: "No token provided" });
-  jwt.verify(token, jwtSecret, (err, decoded) => {
-    if (err) return res.status(401).json({ error: "Invalid token" });
-    req.user = decoded;
-    next();
-  });
-}
+// Public routes
+router.get('/', getListings);
 
-// Create a new listing (requires authentication)
-router.post('/', authMiddleware, async (req, res) => {
-  try {
-    const listing = new Listing({ ...req.body, user: req.user.id });
-    await listing.save();
-    res.status(201).json(listing);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
+// Protected routes - Put specific routes before parameter routes
+router.get('/mylistings', protect, getMyListings);
 
-// Get all listings
-router.get('/', async (req, res) => {
-  try {
-    const listings = await Listing.find().populate('user', 'name email');
-    res.json(listings);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+// Routes with parameters
+router.get('/:id', getListingById);
+router.post('/', protect, upload.array('images', 5), createListing);
+router.route('/:id')
+  .put(protect, upload.array('images', 5), updateListing)
+  .delete(protect, deleteListing);
+
+router.put('/:id/solve', protect, markListingAsSolved);
 
 module.exports = router;
